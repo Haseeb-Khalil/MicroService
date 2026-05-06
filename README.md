@@ -8,38 +8,39 @@ A multi-module Spring Cloud project that demonstrates the core building blocks o
 - Edge routing with **Spring Cloud Gateway**.
 - Two independently deployable Spring Boot services that register themselves with Eureka.
 - Inter-service communication, where `user-service` calls `department-service` via a Value Object response template.
-- Standard Spring Boot patterns: JPA persistence, REST controllers, layered architecture.
+- Standard Spring Boot patterns: JPA persistence (H2 in-memory), REST controllers, layered architecture.
 
 ## Architecture
 
 ```
-                     ┌────────────────────────┐
-   client ─────────▶ │   cloud-gateway        │  (Spring Cloud Gateway)
-                     └────────────┬───────────┘
-                                  │ routes via Eureka
-                ┌─────────────────┼─────────────────┐
-                ▼                                   ▼
-     ┌────────────────────┐               ┌─────────────────────┐
-     │   user-service     │ ───── REST ──▶│ department-service  │
-     │ (DepartmentUser)   │   inter-svc   │ (Department)        │
-     └────────────────────┘               └─────────────────────┘
-                ▲                                   ▲
-                │ registers with                    │
-                └──────────────┬────────────────────┘
-                               ▼
-                  ┌─────────────────────────┐
-                  │  service-registry       │  (Netflix Eureka server)
-                  └─────────────────────────┘
+                     +-------------------------+
+   client ---------> |   cloud-gateway         |  (Spring Cloud Gateway, port 9191)
+                     +-------------+-----------+
+                                   |  routes via Eureka
+                +------------------+------------------+
+                v                                     v
+     +---------------------+                +-----------------------+
+     |   user-service      | ----- REST --> |  department-service   |
+     |   port 9002         |   inter-svc    |  port 9001            |
+     |   (DepartmentUser)  |                |  (Department)         |
+     +---------------------+                +-----------------------+
+                ^                                     ^
+                | registers with                      |
+                +---------------+---------------------+
+                                v
+                  +---------------------------+
+                  |  service-registry         |  (Netflix Eureka, port 8761)
+                  +---------------------------+
 ```
 
 ## Modules
 
-| Module | Role |
-| --- | --- |
-| `service-registry` | Netflix Eureka server. All services register here. |
-| `cloud-gateway` | Spring Cloud Gateway. Single entry point that routes traffic to the right downstream service via Eureka. |
-| `department-service` | Spring Boot REST service exposing `Department` resources, persisted with JPA. |
-| `user-service` | Spring Boot REST service exposing `DepartmentUser` resources. Calls `department-service` and returns a combined response via a `ResponseTemplateVO`. |
+| Module | Port | Role |
+| --- | --- | --- |
+| `service-registry` | 8761 | Netflix Eureka server. All services register here. |
+| `cloud-gateway` | 9191 | Spring Cloud Gateway. Single entry point routing to the right service via Eureka. |
+| `department-service` | 9001 | Spring Boot REST service exposing `Department` resources, persisted in H2 with JPA. |
+| `user-service` | 9002 | Spring Boot REST service exposing `DepartmentUser` resources. Calls `department-service` and returns a combined response via `ResponseTemplateVO`. |
 
 ## Tech stack
 
@@ -47,26 +48,44 @@ A multi-module Spring Cloud project that demonstrates the core building blocks o
 - Spring Cloud 2021.0.4
 - Spring Cloud Gateway
 - Netflix Eureka (server and clients)
-- Spring Data JPA + H2
+- Spring Data JPA + H2 (in-memory)
 - Maven
 
-## Running it locally
+## Run it on your machine
 
-Start the modules in this order, each in its own terminal:
+### Prerequisites
+- Java 17 or newer (`java -version`)
+- No need to install Maven, the project includes the Maven wrapper in each module
+
+### Steps
+
+Open four terminals, one per module, and start them in this order:
 
 ```bash
-# 1. Service registry (Eureka)
+git clone https://github.com/Haseeb-Khalil/MicroService.git
+cd MicroService
+
+# Terminal 1: Eureka registry
 cd service-registry && ./mvnw spring-boot:run
 
-# 2. Domain services
+# Terminal 2: Department service (wait until Eureka is up)
 cd department-service && ./mvnw spring-boot:run
+
+# Terminal 3: User service
 cd user-service && ./mvnw spring-boot:run
 
-# 3. Gateway
+# Terminal 4: Gateway
 cd cloud-gateway && ./mvnw spring-boot:run
 ```
 
-Eureka runs on `http://localhost:8761` by default.
+On Windows replace `./mvnw` with `mvnw.cmd`.
+
+### Verify it's running
+
+- Eureka dashboard: `http://localhost:8761` (you should see USER-SERVICE, DEPARTMENT-SERVICE, API-GATEWAY registered)
+- Department service direct: `http://localhost:9001/departments/1`
+- User service direct: `http://localhost:9002/users/1`
+- Through the gateway: `http://localhost:9191/departments/1` and `http://localhost:9191/users/1`
 
 ## Why I built this
 
