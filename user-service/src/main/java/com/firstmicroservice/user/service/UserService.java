@@ -33,6 +33,13 @@ public class UserService {
         log.info("Inside getUserWithDepartment Method of UserService");
         ResponseTemplateVO vo = new ResponseTemplateVO();
         DepartmentUser departmentUser = userRepository.findByUserId(userId);
+
+        // Handle case when user doesn't exist
+        if (departmentUser == null) {
+            log.warn("User with ID {} not found", userId);
+            return vo;
+        }
+
         Department department =
                 restTemplate.getForObject("http://DEPARTMENT-SERVICE/departments/" + departmentUser.getDepartmentId(), Department.class);
         vo.setDepartmentUser(departmentUser);
