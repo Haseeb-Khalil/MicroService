@@ -44,17 +44,18 @@ A multi-module Spring Cloud project that demonstrates the core building blocks o
 
 ## Tech stack
 
-- Java + Spring Boot 2.7.x
-- Spring Cloud 2021.0.4
+- Java 21 + Spring Boot 3.2.12
+- Spring Cloud 2023.0.4
 - Spring Cloud Gateway
 - Netflix Eureka (server and clients)
 - Spring Data JPA + H2 (in-memory)
 - Maven
+- Lombok
 
 ## Run it on your machine
 
 ### Prerequisites
-- Java 17 or newer (`java -version`)
+- Java 21 or newer (`java -version`)
 - No need to install Maven, the project includes the Maven wrapper in each module
 
 ### Steps
